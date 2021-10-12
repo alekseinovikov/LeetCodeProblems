@@ -4,20 +4,31 @@ class CourseSchedule4 {
 
     data class Course(
         val id: Int,
-        val post: MutableMap<Int, Course> = mutableMapOf()
-    )
+        val count: Int
+    ) {
+        val post: Array<Course?> = Array(count) { null }
+    }
 
     fun checkIfPrerequisite(numCourses: Int, prerequisites: Array<IntArray>, queries: Array<IntArray>): List<Boolean> {
-        val allNodes = mutableMapOf<Int, Course>()
+        val allNodes = Array<Course?>(numCourses) { null }
 
         prerequisites.forEach { cur ->
-            val curId = cur[1]
+            val postCurId = cur[1]
             val preCurId = cur[0]
 
-            val preCur = allNodes.computeIfAbsent(preCurId) { Course(it) }
-            val postCur = allNodes.computeIfAbsent(curId) { Course(it) }
+            var pre = allNodes[preCurId]
+            if (null == pre) {
+                pre = Course(preCurId, numCourses)
+                allNodes[preCurId] = pre
+            }
 
-            preCur.post[curId] = postCur
+            var post = allNodes[postCurId]
+            if (post == null) {
+                post = Course(postCurId, numCourses)
+                allNodes[postCurId] = post
+            }
+
+            pre.post[postCurId] = post
         }
 
         val result = mutableListOf<Boolean>()
@@ -37,11 +48,11 @@ class CourseSchedule4 {
     }
 
     private fun traverse(currNode: Course, toFind: Int): Boolean {
-        if (currNode.post.containsKey(toFind)) {
+        if (currNode.post[toFind] != null) {
             return true
         }
 
-        return currNode.post.any { traverse(it.value, toFind) }
+        return currNode.post.filterNotNull().any { traverse(it, toFind) }
     }
 
 }
