@@ -4,55 +4,49 @@ class CourseSchedule4 {
 
     data class Course(
         val id: Int,
-        val count: Int
-    ) {
-        val post: Array<Course?> = Array(count) { null }
-    }
+        val post: MutableMap<Int, Course> = mutableMapOf()
+    )
 
     fun checkIfPrerequisite(numCourses: Int, prerequisites: Array<IntArray>, queries: Array<IntArray>): List<Boolean> {
-        val allNodes = Array<Course?>(numCourses) { null }
+        val allNodes = mutableMapOf<Int, Course>()
 
         prerequisites.forEach { cur ->
             val postCurId = cur[1]
             val preCurId = cur[0]
 
-            var pre = allNodes[preCurId]
-            if (null == pre) {
-                pre = Course(preCurId, numCourses)
-                allNodes[preCurId] = pre
-            }
-
-            var post = allNodes[postCurId]
-            if (post == null) {
-                post = Course(postCurId, numCourses)
-                allNodes[postCurId] = post
-            }
-
+            val pre = allNodes.computeIfAbsent(preCurId) { Course(it) }
+            val post = allNodes.computeIfAbsent(postCurId) { Course(it) }
             pre.post[postCurId] = post
         }
 
+        val preMatrix = Array(numCourses) {
+            Array(numCourses) { false }
+        }
+
+        traverse(preMatrix, allNodes)
         val result = mutableListOf<Boolean>()
         queries.forEach { q ->
             val pre = q[0]
             val toFind = q[1]
 
-            val preNode = allNodes[pre]
-            if (preNode == null) {
-                result.add(false)
-            } else {
-                result.add(traverse(preNode, toFind))
-            }
+            result.add(preMatrix[pre][toFind])
         }
 
         return result
     }
 
-    private fun traverse(currNode: Course, toFind: Int): Boolean {
-        if (currNode.post[toFind] != null) {
-            return true
+    private fun traverse(matrix: Array<Array<Boolean>>, nodes: Map<Int, Course>) {
+        nodes.forEach { (key, value) ->
+            traverse(key, matrix, value.post)
         }
+    }
 
-        return currNode.post.filterNotNull().any { traverse(it, toFind) }
+    private fun traverse(nodeId: Int, matrix: Array<Array<Boolean>>, nodes: Map<Int, Course>) {
+        nodes.forEach { (key, value) ->
+            matrix[nodeId][key] = true
+            traverse(nodeId, matrix, value.post)
+            traverse(key, matrix, value.post)
+        }
     }
 
 }
